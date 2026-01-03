@@ -1,0 +1,71 @@
+const express = require("express");
+const http = require("http");
+const cors = require("cors");
+const { Server } = require("socket.io");
+
+const app = express();
+app.use(cors());
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: { origin: "*" }
+});
+
+// In-memory storage
+const rooms = new Map();
+
+// Timings
+const ROOM_LIFETIME = 5 * 60 * 1000;   // 5 minutes
+const MESSAGE_LIFETIME = 60 * 1000;   // 60 seconds
+
+io.on("connection", (socket) => {
+    console.log("User connected:", socket.id);
+
+    socket.on("join-room", (roomId) => {
+        socket.join(roomId);
+
+        // Create room if not exists
+        if (!rooms.has(roomId)) {
+            const expiryTime = Date.now() + ROOM_LIFETIME;
+
+            const timer = setTimeout(() => {
+                io.to(roomId).emit("room-expired");
+                io.in(roomId).socketsLeave(roomId);
+                rooms.delete(roomId);
+            }, ROOM_LIFETIME);
+
+            rooms.set(roomId, {
+                users: new Set(),
+                expiryTime,
+                timer
+            });
+        }
+
+        rooms.get(roomId).users.add(socket.id);
+        socket.emit("room-joined", {
+            roomId,
+            expiresAt: rooms.get(roomId).expiryTime
+        });
+    });
+
+    socket.on("message", ({ roomId, text }) => {
+        if (!rooms.has(roomId)) return;
+
+        const expiresAt = Date.now() + MESSAGE_LIFETIME;
+
+        io.to(roomId).emit("message", {
+            text,
+            expiresAt
+        });
+    });
+
+    socket.on("disconnect", () => {
+        rooms.forEach(room => room.users.delete(socket.id));
+    });
+});
+
+server.listen(3000, () => {
+    console.log("Server running on http://localhost:3000");
+});
+
+

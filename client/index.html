@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VanishChat</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="join-box">
+    <h1>VanishChat</h1>
+
+    <input id="roomId" placeholder="Room ID">
+    <input id="roomTime" type="number" placeholder="Room expiry (minutes)">
+    <button onclick="joinRoom()">Join</button>
+</div>
+
+<div class="chat hidden">
+    <div class="top">
+        <span id="countdown"></span>
+    </div>
+
+    <div id="messages"></div>
+
+    <div class="controls">
+        <input id="msg" placeholder="Message">
+        <select id="msgTimer">
+            <option value="30">30s</option>
+            <option value="60" selected>60s</option>
+            <option value="120">2min</option>
+        </select>
+        <button onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
+
